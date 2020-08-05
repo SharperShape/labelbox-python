@@ -1,8 +1,8 @@
 import pytest
+import requests
 
 from labelbox import Dataset
 from labelbox.exceptions import ResourceNotFoundError
-
 
 IMG_URL = "https://picsum.photos/200/300"
 
@@ -55,8 +55,8 @@ def test_dataset_filtering(client, rand_gen):
     d1 = client.create_dataset(name=name_1)
     d2 = client.create_dataset(name=name_2)
 
-    assert list(client.get_datasets(where=Dataset.name==name_1)) == [d1]
-    assert list(client.get_datasets(where=Dataset.name==name_2)) == [d2]
+    assert list(client.get_datasets(where=Dataset.name == name_1)) == [d1]
+    assert list(client.get_datasets(where=Dataset.name == name_2)) == [d2]
 
     d1.delete()
     d2.delete()
@@ -68,7 +68,8 @@ def test_get_data_row_for_external_id(dataset, rand_gen):
     with pytest.raises(ResourceNotFoundError):
         data_row = dataset.data_row_for_external_id(external_id)
 
-    data_row = dataset.create_data_row(row_data=IMG_URL, external_id=external_id)
+    data_row = dataset.create_data_row(row_data=IMG_URL,
+                                       external_id=external_id)
 
     found = dataset.data_row_for_external_id(external_id)
     assert found.uid == data_row.uid
@@ -78,3 +79,23 @@ def test_get_data_row_for_external_id(dataset, rand_gen):
 
     with pytest.raises(ResourceNotFoundError):
         data_row = dataset.data_row_for_external_id(external_id)
+
+
+def test_upload_video_file(dataset, sample_video: str) -> None:
+    """
+    Tests that a mp4 video can be uploaded and preserve content length
+    and content type.
+
+    """
+    dataset.create_data_row(row_data=sample_video)
+    task = dataset.create_data_rows([sample_video, sample_video])
+    task.wait_till_done()
+
+    with open(sample_video, 'rb') as video_f:
+        content_length = len(video_f.read())
+
+    for data_row in dataset.data_rows():
+        url = data_row.row_data
+        response = requests.head(url, allow_redirects=True)
+        assert int(response.headers['Content-Length']) == content_length
+        assert response.headers['Content-Type'] == 'video/mp4'

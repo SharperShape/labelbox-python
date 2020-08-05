@@ -1,10 +1,9 @@
 from enum import Enum, auto
+from typing import Union
 
 from labelbox import utils
-from labelbox.exceptions import InvalidAttributeError, LabelboxError
+from labelbox.exceptions import InvalidAttributeError
 from labelbox.orm.comparison import Comparison
-
-
 """ Defines Field, Relationship and Entity. These classes are building
 blocks for defining the Labelbox schema, DB object operations and
 queries. """
@@ -44,6 +43,15 @@ class Field:
         ID = auto()
         DateTime = auto()
 
+    class EnumType:
+
+        def __init__(self, enum_cls: type):
+            self.enum_cls = enum_cls
+
+        @property
+        def name(self):
+            return self.enum_cls.__name__
+
     class Order(Enum):
         """ Type of sort ordering. """
         Asc = auto()
@@ -73,7 +81,14 @@ class Field:
     def DateTime(*args):
         return Field(Field.Type.DateTime, *args)
 
-    def __init__(self, field_type, name, graphql_name=None):
+    @staticmethod
+    def Enum(enum_cls: type, *args):
+        return Field(Field.EnumType(enum_cls), *args)
+
+    def __init__(self,
+                 field_type: Union[Type, EnumType],
+                 name,
+                 graphql_name=None):
         """ Field init.
         Args:
             field_type (Field.Type): The type of the field.
@@ -165,6 +180,7 @@ class Relationship:
         graphql_name (str): Name of the relationships server-side. Most often
             (not always) just a camelCase version of `name`.
     """
+
     class Type(Enum):
         ToOne = auto()
         ToMany = auto()
@@ -177,8 +193,12 @@ class Relationship:
     def ToMany(*args):
         return Relationship(Relationship.Type.ToMany, *args)
 
-    def __init__(self, relationship_type, destination_type_name,
-                 filter_deleted=True, name=None, graphql_name=None):
+    def __init__(self,
+                 relationship_type,
+                 destination_type_name,
+                 filter_deleted=True,
+                 name=None,
+                 graphql_name=None):
         self.relationship_type = relationship_type
         self.destination_type_name = destination_type_name
         self.filter_deleted = filter_deleted
@@ -208,6 +228,7 @@ class EntityMeta(type):
     of the Entity class object so they can be referenced for example like:
         Entity.Project.
     """
+
     def __init__(cls, clsname, superclasses, attributedict):
         super().__init__(clsname, superclasses, attributedict)
         if clsname != "Entity":
