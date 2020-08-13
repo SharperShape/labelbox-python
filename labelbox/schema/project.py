@@ -376,7 +376,7 @@ class Project(DbObject, Updateable, Deletable):
         """
         if isinstance(annotations, str) or isinstance(annotations, Path):
 
-            def _is_url_valid(url: Union[str, Path]) -> bool:
+            def _is_url_valid(url: str) -> bool:
                 """ Verifies that the given string is a valid url.
 
                 Args:
@@ -385,8 +385,6 @@ class Project(DbObject, Updateable, Deletable):
                     True if the given url is valid otherwise False
 
                 """
-                if isinstance(url, Path):
-                    return False
                 parsed = urlparse(url)
                 return bool(parsed.scheme) and bool(parsed.netloc)
 
@@ -395,7 +393,7 @@ class Project(DbObject, Updateable, Deletable):
                     client=self.client,
                     project_id=self.uid,
                     name=name,
-                    url=str(annotations),
+                    url=annotations,
                 )
             else:
                 path = Path(annotations)
