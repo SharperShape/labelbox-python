@@ -2,6 +2,7 @@ import json
 import logging
 import time
 from pathlib import Path
+import uuid
 from typing import Any
 from typing import BinaryIO
 from typing import Dict
@@ -286,11 +287,15 @@ def _validate_ndjson(lines: Iterable[Dict[str, Any]]) -> None:
     """Validate individual ndjson lines.
 
         - verifies that uuids are unique
+        - generates uuid if not provided
 
     """
     uuids: Set[str] = set()
     for line in lines:
-        uuid = line['uuid']
+        uuid = line.get('uuid')
+        if not uuid:
+            line['uuid'] = str(uuid.uuid4())
+            continue
         if uuid in uuids:
             raise labelbox.exceptions.UuidError(
                 f'{uuid} already used in this import job, '
